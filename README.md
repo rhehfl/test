@@ -1,5 +1,35 @@
 # React + TypeScript + Vite
 
+## 브랜치 전략
+
+### 메인 브랜치
+- **`develop`** : 기본 브랜치 (메인 브랜치)
+
+### 브랜치 네이밍 컨벤션
+브랜치명은 `타입/작업내용` 형식으로 작성합니다.
+
+| 타입 | 설명 | 예시 |
+|------|------|------|
+| `feat` | 새로운 기능 추가 | `feat/board`, `feat/login` |
+| `fix` | 버그 수정 | `fix/login`, `fix/header` |
+| `refactor` | 코드 리팩토링 | `refactor/user-service` |
+| `style` | UI/스타일 변경 | `style/button` |
+| `docs` | 문서 수정 | `docs/readme` |
+| `chore` | 빌드, 설정 변경 등 기타 작업 | `chore/eslint-config` |
+| `test` | 테스트 코드 추가/수정 | `test/auth` |
+
+### 커밋 메시지 컨벤션
+```
+타입: 작업 내용
+
+예시)
+feat: 게시판 기능 추가
+fix: 로그인 오류 수정
+refactor: 유저 서비스 리팩토링
+```
+
+---
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

@@ -1,7 +1,15 @@
 import type { Preview } from '@storybook/react-vite'
-
+import "../src/index.css"
+import { background } from 'storybook/theming';
 const preview: Preview = {
   parameters: {
+      backgrounds: {
+      default: 'base',
+      values: [
+        { name: 'base',    value: '#0B0D12' },
+        { name: 'surface', value: '#111318' },
+      ],
+    },
     controls: {
       matchers: {
        color: /(background|color)$/i,

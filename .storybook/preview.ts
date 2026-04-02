@@ -1,6 +1,5 @@
 import type { Preview } from '@storybook/react-vite'
 import "../src/index.css"
-import { background } from 'storybook/theming';
 const preview: Preview = {
   parameters: {
       backgrounds: {

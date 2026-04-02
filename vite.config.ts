@@ -8,10 +8,12 @@ import { fileURLToPath } from 'node:url';
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { playwright } from '@vitest/browser-playwright';
 const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
+import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [TanStackRouterVite({target: 'react',
+      autoCodeSplitting: true }),react(), tailwindcss()],
   test: {
     projects: [{
       extends: true,

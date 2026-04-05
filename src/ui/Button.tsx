@@ -1,5 +1,3 @@
-// src/components/ui/Button/Button.tsx
-
 import { type ButtonHTMLAttributes } from 'react';
 
 const variants = {
@@ -19,11 +17,8 @@ const sizes = {
 } as const;
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  /** 버튼 스타일 종류 */
   variant?: keyof typeof variants;
-  /** 버튼 크기 */
   size?: keyof typeof sizes;
-  /** 로딩 상태 — 비활성화 + 스피너 */
   loading?: boolean;
 }
 

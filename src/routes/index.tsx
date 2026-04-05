@@ -9,7 +9,6 @@ export const Route = createFileRoute('/')({
 function Index() {
   return (
     <main className="p-2">
-      <h3>Welcome Home!</h3>
       <CharacterSearchForm />
     </main>
   );

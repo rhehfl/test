@@ -7,7 +7,7 @@ const defaultHeaders = {
 const defaultOptions: RequestInit = {
   headers: defaultHeaders,
 };
-const defaultURL = 'https://developer-lostark.game.onstove.com';
+const defaultURL = '/api';
 export const fetcher = async (input: URL | RequestInfo, init?: RequestInit) => {
   return fetch(defaultURL + input, { ...defaultOptions, ...init });
 };

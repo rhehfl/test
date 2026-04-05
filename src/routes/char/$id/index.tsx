@@ -33,10 +33,8 @@ function RouteComponent() {
       <CharacterSearchForm defaultValue={id} />
       {character && (
         <div>
-          <h2>{character.CharacterName}</h2>
-          <p>Level: {character.CharacterLevel}</p>
-          <p>Class: {character.CharacterClassName}</p>
-          <p>Item Average Level: {character.ItemAvgLevel}</p>
+          <h1 className="text-3xl">{character.CharacterName}</h1>
+          <img className="w-10" src={profileData?.CharacterImage} alt={character.CharacterName} />
         </div>
       )}
     </main>

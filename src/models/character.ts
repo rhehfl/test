@@ -1,3 +1,95 @@
+// ── Equipment ──────────────────────────────────────────────────────────────
+
+export interface EquipmentTooltip {
+  type: string;
+  value: unknown;
+}
+
+export interface Equipment {
+  Type: string;
+  Name: string;
+  Icon: string;
+  Grade: string;
+  Tooltip: string; // JSON string
+}
+
+// ── Engravings ──────────────────────────────────────────────────────────────
+
+export interface Engraving {
+  Slot: number;
+  Name: string;
+  Icon: string;
+  Tooltip: string;
+}
+
+export interface EngravingEffect {
+  Icon: string;
+  Name: string;
+  Description: string;
+  Point: number;
+  IsHave: boolean;
+}
+
+export interface EngravingsResponse {
+  Engravings: Engraving[] | null;
+  Effects: EngravingEffect[] | null;
+}
+
+// ── Gems ──────────────────────────────────────────────────────────────────
+
+export interface GemEffect {
+  GemSlot: number;
+  Name: string;
+  Description: string;
+  Icon: string;
+  Tooltip: string;
+}
+
+export interface Gem {
+  Slot: number;
+  Name: string;
+  Icon: string;
+  Level: number;
+  Grade: string;
+  Tooltip: string;
+}
+
+export interface GemsResponse {
+  Gems: Gem[] | null;
+  Effects: GemEffect[] | null;
+}
+
+// ── Skills ──────────────────────────────────────────────────────────────────
+
+export interface Tripod {
+  Tier: number;
+  Slot: number;
+  Name: string;
+  Icon: string;
+  Level: number;
+  IsSelected: boolean;
+  TooltipSuffix: string;
+}
+
+export interface Rune {
+  Name: string;
+  Icon: string;
+  Grade: string;
+}
+
+export interface Skill {
+  Name: string;
+  Icon: string;
+  Level: number;
+  Type: string;
+  IsAwakening: boolean;
+  Tripods: Tripod[];
+  Rune: Rune | null;
+  Tooltip: string;
+}
+
+// ── Character ──────────────────────────────────────────────────────────────
+
 export interface Character {
   ServerName: string;
   CharacterName: string;

@@ -1,8 +1,14 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { getCharacter } from '../../../api/getCharacter';
 import CharacterSearchForm from '../../../components/CharacterSearchForm';
-import { getCharacterProfile } from '../../../api/getCharacterProfile';
+import { CharacterHeader, CharacterHeaderSkeleton } from '../../../components/CharacterHeader';
+import { CharacterSidebar, type CharacterTab } from '../../../components/CharacterSidebar';
+import { EquipmentTab, EquipmentTabSkeleton } from '../../../components/tabs/EquipmentTab';
+import { EngravingsTab, EngravingsTabSkeleton } from '../../../components/tabs/EngravingsTab';
+import { GemsTab, GemsTabSkeleton } from '../../../components/tabs/GemsTab';
+import { SkillsTab, SkillsTabSkeleton } from '../../../components/tabs/SkillsTab';
+import { getOrFetchCharacter, fetchAndCacheCharacter } from '../../../lib/fetchAndCache';
 
 export const Route = createFileRoute('/char/$id/')({
   component: RouteComponent,
@@ -10,31 +16,73 @@ export const Route = createFileRoute('/char/$id/')({
 
 function RouteComponent() {
   const { id } = Route.useParams();
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['character', 'my'],
-    queryFn: () => getCharacter(id),
+  const [activeTab, setActiveTab] = useState<CharacterTab>('equipment');
+
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
+    queryKey: ['character', id],
+    queryFn: () => getOrFetchCharacter(id),
   });
 
-  const {
-    data: profileData,
-    isLoading: isProfileLoading,
-    isError: isProfileError,
-  } = useQuery({
-    queryKey: ['character', 'profile'],
-    queryFn: () => getCharacterProfile(id),
-    enabled: !!data,
-  });
-  console.log({ profileData, isProfileLoading, isProfileError });
-
-  const character = data?.find((char) => char.CharacterName === id);
+  const handleRefresh = async () => {
+    await fetchAndCacheCharacter(id);
+    refetch();
+  };
 
   return (
     <main>
       <CharacterSearchForm defaultValue={id} />
-      {character && (
-        <div>
-          <h1 className="text-3xl">{character.CharacterName}</h1>
-          <img className="w-10" src={profileData?.CharacterImage} alt={character.CharacterName} />
+
+      {isLoading && (
+        <div className="rounded-lg border border-border-default bg-bg-surface">
+          <CharacterHeaderSkeleton />
+          <div className="flex min-h-96">
+            <div className="w-28 shrink-0 border-r border-border-default bg-bg-surface" />
+            <div className="flex-1 p-6">
+              <EquipmentTabSkeleton />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isError && (
+        <div className="mt-4 rounded-lg border border-border-default bg-bg-surface p-8 text-center">
+          <p className="text-text-secondary">캐릭터를 찾을 수 없습니다.</p>
+        </div>
+      )}
+
+      {data && data.profile && (
+        <div className="mt-4 overflow-hidden rounded-lg border border-border-default">
+          <CharacterHeader
+            profile={data.profile}
+            updatedAt={data.updated_at}
+            onRefresh={handleRefresh}
+            isRefreshing={isFetching}
+          />
+          <div className="flex min-h-96">
+            <CharacterSidebar activeTab={activeTab} onChange={setActiveTab} />
+            <div className="flex-1 overflow-auto p-6">
+              {activeTab === 'equipment' && (
+                data.equipment
+                  ? <EquipmentTab equipment={data.equipment} />
+                  : <EquipmentTabSkeleton />
+              )}
+              {activeTab === 'engravings' && (
+                data.engravings
+                  ? <EngravingsTab engravings={data.engravings} />
+                  : <EngravingsTabSkeleton />
+              )}
+              {activeTab === 'gems' && (
+                data.gems
+                  ? <GemsTab gems={data.gems} />
+                  : <GemsTabSkeleton />
+              )}
+              {activeTab === 'skills' && (
+                data.skills
+                  ? <SkillsTab skills={data.skills} />
+                  : <SkillsTabSkeleton />
+              )}
+            </div>
+          </div>
         </div>
       )}
     </main>

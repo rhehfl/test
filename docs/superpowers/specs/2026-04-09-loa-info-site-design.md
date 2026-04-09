@@ -114,6 +114,50 @@ ORDER BY class_name, count DESC;
 
 ---
 
+## 데이터 시딩 (Supabase Edge Function + Cron)
+
+### 목적
+
+검색 기반 누적만으로는 초기 통계 데이터가 부족하므로, 랭킹 API를 통해 상위 캐릭터 데이터를 정기 수집한다.
+
+### Lost Ark 랭킹 API
+
+```
+GET /ranking/classes/{classId}/worlds/{worldId}?page=0
+```
+
+페이지당 최대 100명. 직업별/서버별로 순회해 상위 캐릭터 목록을 확보한다.
+
+### Edge Function: `collect-rankings`
+
+```
+supabase/functions/collect-rankings/index.ts
+```
+
+동작 순서:
+1. 랭킹 API에서 캐릭터 목록 수집 (직업별 상위 100명)
+2. 각 캐릭터에 대해 `/armories/characters/:name` 전체 데이터 fetch
+3. Supabase `characters` 테이블에 upsert
+4. Lost Ark API 레이트 리밋 대응: 요청 간 200ms 딜레이
+
+### Cron 스케줄
+
+Supabase Cron으로 매일 1회 실행 (새벽 4시 KST):
+
+```sql
+select cron.schedule(
+  'collect-rankings',
+  '0 19 * * *',  -- UTC 19:00 = KST 04:00
+  $$ select net.http_post(...) $$
+);
+```
+
+### 레이트 리밋 관리
+
+Lost Ark 공식 API는 분당 100회 제한. Edge Function 내에서 배치당 요청 수를 제어하고, 초과 시 다음 실행으로 이월.
+
+---
+
 ## 통계 페이지 (`/stats`)
 
 ### 표시 내용
@@ -154,6 +198,11 @@ src/
   routes/
     char/$id/index.tsx        # 리팩토링
     stats/index.tsx           # 신규
+
+supabase/
+  functions/
+    collect-rankings/
+      index.ts                # Edge Function: 랭킹 기반 데이터 수집
 ```
 
 ---

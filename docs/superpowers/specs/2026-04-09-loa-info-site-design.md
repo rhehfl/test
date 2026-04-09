@@ -2,7 +2,7 @@
 
 ## 개요
 
-로아와/일로아와 유사한 Lost Ark 캐릭터 정보 사이트. 캐릭터 검색 후 장비/각인/보석/스킬을 확인할 수 있으며, 검색 데이터를 Supabase에 누적해 아크패시브 노드 패턴 통계를 제공한다.
+로아와/일로아와 유사한 Lost Ark 캐릭터 정보 사이트. 공식 Lost Ark API로 캐릭터 데이터를 가져와 Supabase에 캐싱한다. 캐릭터 상세(장비/각인/보석/스킬)를 사이드바 레이아웃으로 표시하고, 누적 데이터로 아크패시브 노드 패턴 통계를 제공한다.
 
 ---
 
@@ -16,11 +16,28 @@
 
 ---
 
+## 데이터 흐름 (캐시 우선)
+
+```
+캐릭터 검색 → /char/:id 진입
+  ↓
+Supabase에서 캐릭터 조회
+  ├── 있음 → 캐시 데이터 표시 + "X분 전 업데이트" + 새로고침 버튼
+  └── 없음 → 공식 Lost Ark API 전체 호출 → Supabase 저장 → 표시
+
+새로고침 버튼 클릭
+  → 공식 Lost Ark API 재호출 → Supabase upsert → 화면 갱신
+```
+
+탭(장비/각인/보석/스킬)은 모두 최초 진입 시 한 번에 가져와 Supabase에 저장. 이후 탭 전환은 Supabase 캐시만 사용 (API 재호출 없음).
+
+---
+
 ## 캐릭터 상세 페이지 (`/char/:id`)
 
 ### 레이아웃
 
-- **상단 헤더**: 캐릭터 이미지, 이름, 서버, 직업, 아이템 레벨
+- **상단 헤더**: 캐릭터 이미지, 이름, 서버, 직업, 아이템 레벨, "X분 전 업데이트" + 새로고침 버튼
 - **왼쪽 사이드바**: 4개 탭 — 장비 / 각인 / 보석 / 스킬
 - **메인 영역**: 선택된 탭 콘텐츠 (기본값: 장비)
 
@@ -35,7 +52,7 @@
 
 ---
 
-## API 레이어
+## API 레이어 (공식 Lost Ark API)
 
 ### 추가할 엔드포인트 (`src/api/`)
 
@@ -56,19 +73,6 @@ getCharacterSkills.ts        → GET /armories/characters/:name/combat-skills
 - `Gem` — 보석 (Level, Name, Icon, Effects)
 - `Skill` — 스킬 (Name, Level, Tripods, Rune)
 
-### Lazy Loading 전략
-
-탭 클릭 시 해당 API 호출. TanStack Query의 `enabled` 옵션으로 제어.
-
-```ts
-// 예시: 각인 탭 클릭 시에만 fetch
-useQuery({
-  queryKey: ['engravings', id],
-  queryFn: () => getCharacterEngravings(id),
-  enabled: activeTab === 'engravings',
-})
-```
-
 ---
 
 ## Supabase 스키마
@@ -77,16 +81,20 @@ useQuery({
 
 | 컬럼 | 타입 | 설명 |
 |------|------|------|
-| `id` | uuid | PK |
+| `id` | uuid | PK (gen_random_uuid()) |
 | `character_name` | text | 캐릭터명 (unique) |
 | `server_name` | text | 서버명 |
 | `class_name` | text | 직업명 |
 | `item_avg_level` | numeric | 아이템 평균 레벨 |
-| `ark_passive_pattern` | text | 아크패시브 패턴 (예: "1-1-1") |
-| `raw_data` | jsonb | 전체 프로필 raw JSON |
+| `ark_passive_pattern` | text | 아크패시브 패턴 (예: "1-1-1", null 가능) |
+| `profile` | jsonb | profiles API 응답 전체 |
+| `equipment` | jsonb | equipment API 응답 전체 |
+| `engravings` | jsonb | engravings API 응답 전체 |
+| `gems` | jsonb | gems API 응답 전체 |
+| `skills` | jsonb | combat-skills API 응답 전체 |
 | `updated_at` | timestamptz | 마지막 업데이트 시각 |
 
-### `character_stats` 뷰 (집계용)
+### `character_stats` 뷰 (통계 집계용)
 
 ```sql
 SELECT
@@ -95,17 +103,14 @@ SELECT
   COUNT(*) AS count,
   ROUND(AVG(item_avg_level), 2) AS avg_item_level
 FROM characters
+WHERE ark_passive_pattern IS NOT NULL
 GROUP BY class_name, ark_passive_pattern
 ORDER BY class_name, count DESC;
 ```
 
 ### 아크패시브 패턴 추출
 
-`ark_passive_pattern`은 `/armories/characters/:name/profiles` 응답의 `ArkPassive` 필드에서 추출한다. 패턴은 깨달음/진화/초월 노드 포인트를 `"깨달음-진화-초월"` 형식 문자열로 정규화 (예: `"1-1-1"`, `"1-2-1"`). API 응답에 해당 필드가 없으면 `null`로 저장.
-
-### Upsert 시점
-
-캐릭터 상세 페이지 진입 시 프로필 API 응답 후 Supabase에 upsert (conflict on `character_name`).
+`ark_passive_pattern`은 `/armories/characters/:name/profiles` 응답의 `ArkPassive` 필드에서 추출. 깨달음/진화/초월 노드 포인트를 `"깨달음-진화-초월"` 형식으로 정규화 (예: `"1-1-1"`, `"1-2-1"`). 해당 필드가 없으면 `null`.
 
 ---
 
@@ -114,7 +119,7 @@ ORDER BY class_name, count DESC;
 ### 표시 내용
 
 - 직업별 필터
-- 아이템 레벨 구간 필터 (예: 1580~1600, 1600~1620, 1620+)
+- 아이템 레벨 구간 필터 (1580~1600, 1600~1620, 1620+)
 - 아크패시브 패턴별 사용자 수 + 비율 바 차트
 
 ### 데이터 소스
@@ -133,7 +138,7 @@ src/
     getCharacterGems.ts
     getCharacterSkills.ts
   components/
-    CharacterHeader.tsx       # 상단 캐릭터 대표 정보
+    CharacterHeader.tsx       # 상단 캐릭터 대표 정보 + 새로고침
     CharacterSidebar.tsx      # 4탭 사이드바
     tabs/
       EquipmentTab.tsx
@@ -143,23 +148,12 @@ src/
     StatsChart.tsx            # 아크패시브 패턴 바 차트
   lib/
     supabase.ts               # Supabase client 초기화
+    fetchAndCache.ts          # API 호출 + Supabase 저장 로직
   models/
     character.ts              # 타입 추가
   routes/
     char/$id/index.tsx        # 리팩토링
     stats/index.tsx           # 신규
-```
-
----
-
-## 데이터 흐름
-
-```
-사용자 검색
-  → /char/:id 진입
-  → Lost Ark API: profiles (항상 fetch)
-  → Supabase upsert (백그라운드, 에러 무시)
-  → 탭 클릭 → 해당 API lazy fetch
 ```
 
 ---
@@ -175,9 +169,9 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 
 ## 에러 처리
 
-- Lost Ark API 실패 시 에러 메시지 표시 (재시도 버튼)
-- Supabase upsert 실패는 조용히 무시 (통계 누락만, UX 영향 없음)
-- 캐릭터 미존재(404) 시 "캐릭터를 찾을 수 없습니다" 안내
+- Supabase 캐시 미존재 + Lost Ark API 실패 → "데이터를 불러올 수 없습니다" + 재시도 버튼
+- 캐시 있는 상태에서 새로고침 API 실패 → 기존 캐시 유지, 에러 토스트 표시
+- 캐릭터 미존재(404) → "캐릭터를 찾을 수 없습니다" 안내
 
 ---
 
@@ -202,11 +196,11 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 기존 Tailwind 커스텀 클래스(`bg-gold`, `text-text-primary` 등) 패턴 유지. 장비 등급별 색상 토큰 추가:
 
 ```
-text-grade-ancient   # 고대 (노란/주황)
-text-grade-relic     # 유물 (주황)
-text-grade-legendary # 전설 (금)
-text-grade-epic      # 영웅 (보라)
-text-grade-rare      # 희귀 (파랑)
+text-grade-ancient   # 고대
+text-grade-relic     # 유물
+text-grade-legendary # 전설
+text-grade-epic      # 영웅
+text-grade-rare      # 희귀
 ```
 
 ---

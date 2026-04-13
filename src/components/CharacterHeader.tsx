@@ -1,7 +1,9 @@
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Star } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '../ui/Button';
 import { Skeleton } from '../ui/Skeleton';
 import type { CharacterProfile } from '../models/character';
+import { isFavorite, toggleFavorite } from '../lib/characterStorage';
 
 interface CharacterHeaderProps {
   profile: CharacterProfile;
@@ -19,6 +21,8 @@ function timeAgo(iso: string): string {
 }
 
 export function CharacterHeader({ profile, updatedAt, onRefresh, isRefreshing }: CharacterHeaderProps) {
+  const [starred, setStarred] = useState(() => isFavorite(profile.CharacterName));
+
   return (
     <div className="flex items-center gap-4 border-b border-border-default bg-bg-surface px-6 py-4">
       {profile.CharacterImage ? (
@@ -40,8 +44,28 @@ export function CharacterHeader({ profile, updatedAt, onRefresh, isRefreshing }:
         </p>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
         <span className="text-xs text-text-muted">{timeAgo(updatedAt)} 업데이트</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            const next = toggleFavorite({
+              name: profile.CharacterName,
+              serverName: profile.ServerName,
+              className: profile.CharacterClassName,
+              itemAvgLevel: profile.ItemAvgLevel,
+              characterImage: profile.CharacterImage ?? '',
+            });
+            setStarred(next);
+          }}
+        >
+          <Star
+            size={14}
+            className={starred ? 'fill-gold text-gold' : 'text-text-muted'}
+          />
+          {starred ? '즐겨찾기 해제' : '즐겨찾기'}
+        </Button>
         <Button variant="ghost" size="sm" onClick={onRefresh} loading={isRefreshing}>
           <RefreshCw size={14} />
           새로고침

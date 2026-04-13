@@ -30,9 +30,18 @@ export interface EngravingEffect {
   IsHave: boolean;
 }
 
+export interface ArkPassiveEffect {
+  Name: string;
+  Grade: string;
+  Level: number;
+  Description: string;
+  AbilityStoneLevel: number | null;
+}
+
 export interface EngravingsResponse {
   Engravings: Engraving[] | null;
   Effects: EngravingEffect[] | null;
+  ArkPassiveEffects: ArkPassiveEffect[] | null;
 }
 
 // ── Gems ──────────────────────────────────────────────────────────────────
@@ -40,7 +49,7 @@ export interface EngravingsResponse {
 export interface GemEffect {
   GemSlot: number;
   Name: string;
-  Description: string;
+  Option: string;
   Icon: string;
   Tooltip: string;
 }
@@ -56,7 +65,7 @@ export interface Gem {
 
 export interface GemsResponse {
   Gems: Gem[] | null;
-  Effects: GemEffect[] | null;
+  Effects: { Skills: GemEffect[]; Description: string } | null;
 }
 
 // ── Skills ──────────────────────────────────────────────────────────────────

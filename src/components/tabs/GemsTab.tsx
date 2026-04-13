@@ -2,6 +2,12 @@ import { Badge } from '../../ui/Badge';
 import { Skeleton } from '../../ui/Skeleton';
 import type { GemsResponse } from '../../models/character';
 
+function stripHtml(html: string): string {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return div.textContent ?? html;
+}
+
 const GRADE_MAP: Record<string, 'ancient' | 'relic' | 'legendary' | 'epic' | 'rare' | 'uncommon' | 'normal'> = {
   '고대': 'ancient',
   '유물': 'relic',
@@ -19,7 +25,7 @@ interface GemsTabProps {
 export function GemsTab({ gems }: GemsTabProps) {
   const gemList = gems.Gems ?? [];
   const effectMap = new Map(
-    (gems.Effects ?? []).map((e) => [e.GemSlot, e])
+    (gems.Effects?.Skills ?? []).map((e) => [e.GemSlot, e])
   );
 
   if (gemList.length === 0) {
@@ -33,14 +39,14 @@ export function GemsTab({ gems }: GemsTabProps) {
         const grade = GRADE_MAP[gem.Grade] ?? 'normal';
         return (
           <div key={gem.Slot} className="flex items-center gap-3 rounded-md border border-border-default bg-bg-surface p-3">
-            <img src={gem.Icon} alt={gem.Name} className="h-9 w-9 shrink-0 rounded object-cover" />
+            <img src={gem.Icon} alt={stripHtml(gem.Name)} className="h-9 w-9 shrink-0 rounded object-cover" />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <Badge grade={grade} label={`Lv.${gem.Level}`} />
-                <span className="truncate text-sm font-medium text-text-primary">{gem.Name}</span>
+                <span className="truncate text-sm font-medium text-text-primary">{stripHtml(gem.Name)}</span>
               </div>
               {effect && (
-                <p className="mt-0.5 truncate text-xs text-text-secondary">{effect.Description}</p>
+                <p className="mt-0.5 truncate text-xs text-text-secondary">{effect.Option}</p>
               )}
             </div>
           </div>

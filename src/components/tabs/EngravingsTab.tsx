@@ -8,15 +8,50 @@ const LEVEL_GRADE_MAP: Record<number, 'ancient' | 'relic' | 'rare' | 'uncommon'>
   1: 'uncommon',
 };
 
+const GRADE_MAP: Record<string, 'ancient' | 'relic' | 'legendary' | 'epic' | 'rare' | 'uncommon' | 'normal'> = {
+  '고대': 'ancient',
+  '유물': 'relic',
+  '전설': 'legendary',
+  '영웅': 'epic',
+  '희귀': 'rare',
+  '고급': 'uncommon',
+  '일반': 'normal',
+};
+
 interface EngravingsTabProps {
   engravings: EngravingsResponse;
 }
 
 export function EngravingsTab({ engravings }: EngravingsTabProps) {
   const effects = engravings.Effects ?? [];
+  const arkEffects = engravings.ArkPassiveEffects ?? [];
 
-  if (effects.length === 0) {
+  if (effects.length === 0 && arkEffects.length === 0) {
     return <p className="text-sm text-text-muted">각인 정보가 없습니다.</p>;
+  }
+
+  if (arkEffects.length > 0) {
+    return (
+      <div className="flex flex-col gap-2">
+        {arkEffects.map((effect, i) => {
+          const grade = GRADE_MAP[effect.Grade] ?? 'normal';
+          return (
+            <div key={i} className="flex items-center gap-3 rounded-md border border-border-default bg-bg-surface p-3">
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-text-primary">{effect.Name}</span>
+                  <Badge grade={grade} label={effect.Grade} />
+                  {effect.Level > 0 && <span className="text-xs text-text-muted">Lv.{effect.Level}</span>}
+                  {effect.AbilityStoneLevel != null && (
+                    <span className="text-xs text-text-muted">스톤 {effect.AbilityStoneLevel}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
   }
 
   const active = effects.filter((e) => e.IsHave);

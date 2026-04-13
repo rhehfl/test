@@ -46,7 +46,10 @@ export async function getCharacterFromCache(name: string): Promise<CachedCharact
     .eq('character_name', name)
     .single();
 
-  if (error || !data) return null;
+  // PGRST116 = 행 없음(캐시 미스) → null 반환
+  if (error?.code === 'PGRST116') return null;
+  // 그 외 Supabase 오류는 전파 (LOA API 폴백 방지)
+  if (error) throw new Error(`[cache] Supabase error: ${error.message}`);
   return data as CachedCharacter;
 }
 

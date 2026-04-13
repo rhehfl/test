@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import CharacterSearchForm from '../../../components/CharacterSearchForm';
@@ -9,6 +9,7 @@ import { EngravingsTab, EngravingsTabSkeleton } from '../../../components/tabs/E
 import { GemsTab, GemsTabSkeleton } from '../../../components/tabs/GemsTab';
 import { SkillsTab, SkillsTabSkeleton } from '../../../components/tabs/SkillsTab';
 import { getOrFetchCharacter, fetchAndCacheCharacter } from '../../../lib/fetchAndCache';
+import { addRecent } from '../../../lib/characterStorage';
 
 export const Route = createFileRoute('/char/$id/')({
   component: RouteComponent,
@@ -21,7 +22,21 @@ function RouteComponent() {
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['character', id],
     queryFn: () => getOrFetchCharacter(id),
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
   });
+
+  useEffect(() => {
+    if (data?.profile) {
+      addRecent({
+        name: data.profile.CharacterName,
+        serverName: data.profile.ServerName,
+        className: data.profile.CharacterClassName,
+        itemAvgLevel: data.profile.ItemAvgLevel,
+        characterImage: data.profile.CharacterImage ?? '',
+      });
+    }
+  }, [data?.profile]);
 
   const handleRefresh = async () => {
     await fetchAndCacheCharacter(id);

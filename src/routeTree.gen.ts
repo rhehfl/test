@@ -10,11 +10,23 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as StatsIndexRouteImport } from './routes/stats/index'
+import { Route as GempagoIndexRouteImport } from './routes/gempago/index'
 import { Route as CharIdIndexRouteImport } from './routes/char/$id/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StatsIndexRoute = StatsIndexRouteImport.update({
+  id: '/stats/',
+  path: '/stats/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GempagoIndexRoute = GempagoIndexRouteImport.update({
+  id: '/gempago/',
+  path: '/gempago/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CharIdIndexRoute = CharIdIndexRouteImport.update({
@@ -25,27 +37,35 @@ const CharIdIndexRoute = CharIdIndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/gempago/': typeof GempagoIndexRoute
+  '/stats/': typeof StatsIndexRoute
   '/char/$id/': typeof CharIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/gempago': typeof GempagoIndexRoute
+  '/stats': typeof StatsIndexRoute
   '/char/$id': typeof CharIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/gempago/': typeof GempagoIndexRoute
+  '/stats/': typeof StatsIndexRoute
   '/char/$id/': typeof CharIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/char/$id/'
+  fullPaths: '/' | '/gempago/' | '/stats/' | '/char/$id/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/char/$id'
-  id: '__root__' | '/' | '/char/$id/'
+  to: '/' | '/gempago' | '/stats' | '/char/$id'
+  id: '__root__' | '/' | '/gempago/' | '/stats/' | '/char/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  GempagoIndexRoute: typeof GempagoIndexRoute
+  StatsIndexRoute: typeof StatsIndexRoute
   CharIdIndexRoute: typeof CharIdIndexRoute
 }
 
@@ -56,6 +76,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/stats/': {
+      id: '/stats/'
+      path: '/stats'
+      fullPath: '/stats/'
+      preLoaderRoute: typeof StatsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gempago/': {
+      id: '/gempago/'
+      path: '/gempago'
+      fullPath: '/gempago/'
+      preLoaderRoute: typeof GempagoIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/char/$id/': {
@@ -70,6 +104,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  GempagoIndexRoute: GempagoIndexRoute,
+  StatsIndexRoute: StatsIndexRoute,
   CharIdIndexRoute: CharIdIndexRoute,
 }
 export const routeTree = rootRouteImport

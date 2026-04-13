@@ -20,4 +20,10 @@ export default defineConfig([globalIgnores(['dist']), {
     ecmaVersion: 2020,
     globals: globals.browser,
   },
+}, {
+  // TanStack Router route files export Route + components — react-refresh false positive
+  files: ['src/routes/**/*.tsx'],
+  rules: {
+    'react-refresh/only-export-components': 'off',
+  },
 }, ...storybook.configs["flat/recommended"], prettierConfig])

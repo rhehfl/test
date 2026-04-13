@@ -13,6 +13,12 @@ export default function Header() {
         >
           통계
         </Link>
+        <Link
+          to="/gempago"
+          className="text-sm text-text-secondary transition-colors hover:text-text-primary"
+        >
+          젬파고
+        </Link>
       </nav>
     </header>
   );

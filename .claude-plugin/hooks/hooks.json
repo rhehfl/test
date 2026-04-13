@@ -1,0 +1,13 @@
+{
+  "Stop": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "prompt",
+          "prompt": "대화 기록을 확인하라. Write 또는 Edit 도구로 src/ 디렉토리의 .tsx/.ts/.css 파일이 수정되었는지 확인하라. 만약 src/ 파일이 수정되었다면, mcp__claude-in-chrome__ 계열 도구(navigate, screenshot, read_console_messages 등)가 사용되었는지 확인하라. src/ 파일은 수정되었지만 브라우저 검증 도구가 사용되지 않았다면 'block'을 반환하고 이유로 '⚠️ 브라우저 검증 필요: src/ 파일이 수정되었습니다. localhost:5173에서 변경된 페이지를 브라우저로 테스트한 후 완료해주세요.'를 명시하라. src/ 파일 수정이 없거나 이미 브라우저 검증이 완료되었다면 'approve'를 반환하라."
+        }
+      ]
+    }
+  ]
+}

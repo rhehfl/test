@@ -1,0 +1,6 @@
+{
+  "name": "loa-browser-verify",
+  "version": "1.0.0",
+  "description": "LOA 앱 기능개발 후 브라우저 자동 검증",
+  "hooks": "./hooks/hooks.json"
+}

@@ -44,6 +44,24 @@
   --color-grade-uncommon: #1e8a50;
   --color-grade-normal: #888480;
 
+  /* ── Animations ── */
+  --animate-fade-in: fade-in 200ms ease-out both;
+  --animate-fade-up: fade-up 200ms ease-out both;
+  --animate-fade-down: fade-down 200ms ease-out both;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fade-down {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
   /* ── Radius ── */
   --radius-sm: 5px;
   --radius-md: 8px;

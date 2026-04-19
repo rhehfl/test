@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import Tesseract from 'tesseract.js';
-import { Monitor, Camera } from 'lucide-react';
+import { Monitor } from 'lucide-react';
 import { Button } from '../../ui/Button';
 
 type Roi = { x: number; y: number; w: number; h: number };
@@ -13,53 +13,72 @@ export function WebCaptureAdvisor() {
   const [isStreaming, setIsStreaming] = useState(false);
 
   useEffect(() => {
-    if (!roi || !isStreaming) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ro = new ResizeObserver(([entry]) => {
+      canvas.width = entry.contentRect.width;
+      canvas.height = entry.contentRect.height;
+    });
+    ro.observe(canvas);
+    return () => ro.disconnect();
+  }, []);
 
-    let raf: number;
-
-    const draw = () => {
-      const ctx = previewRef.current?.getContext('2d');
-      if (ctx && videoRef.current) {
-        ctx.drawImage(
-          videoRef.current,
-          roi.x,
-          roi.y,
-          roi.w,
-          roi.h,
-          0,
-          0,
-          ctx.canvas.width,
-          ctx.canvas.height, // preview canvas 전체에 확대
-        );
-      }
-      raf = requestAnimationFrame(draw);
-    };
-
-    raf = requestAnimationFrame(draw);
-
-    return () => cancelAnimationFrame(raf); // roi/isStreaming 바뀌면 이전 루프 정리
-  }, [roi, isStreaming]);
+  useEffect(() => {
+    if (!roi || !videoRef.current || !dragStart.current) return;
+    const scale = Math.min(
+      videoRef.current.clientWidth / roi.w,
+      videoRef.current.clientHeight / roi.h,
+    );
+    videoRef.current.style.transformOrigin = '0 0';
+    videoRef.current.style.transform = `scale(${scale}) translate(-${dragStart.current.x}px, -${dragStart.current.y}px)`;
+  }, [roi]);
 
   const onMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current || !isStreaming) return;
     const rect = e.currentTarget.getBoundingClientRect();
     dragStart.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
   };
 
+  const onMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (e.buttons !== 1 || !isStreaming) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const currentX = e.clientX - rect.left;
+    const currentY = e.clientY - rect.top;
+    const ctx = canvasRef.current?.getContext('2d');
+
+    if (!ctx || !dragStart.current || !canvasRef.current) return;
+
+    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    ctx.strokeStyle = 'rgba(255, 105, 180, 1)';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([8, 4]);
+    ctx.strokeRect(
+      dragStart.current.x,
+      dragStart.current.y,
+      currentX - dragStart.current.x,
+      currentY - dragStart.current.y,
+    );
+  };
+
   const onMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const x2 = e.clientX - rect.left;
-    const y2 = e.clientY - rect.top;
+    const ctx = canvasRef.current?.getContext('2d');
 
-    if (!videoRef.current || !dragStart.current) return;
-    const scaleX = videoRef.current.videoWidth / rect.width;
-    const scaleY = videoRef.current.videoHeight / rect.height;
+    const dragEndX = e.clientX - rect.left;
+    const dragEndY = e.clientY - rect.top;
+
+    if (!videoRef.current || !dragStart.current || !ctx || !canvasRef.current) return;
     setRoi({
-      x: dragStart.current.x * scaleX,
-      y: dragStart.current.y * scaleY,
-      w: (x2 - dragStart.current.x) * scaleX,
-      h: (y2 - dragStart.current.y) * scaleY,
+      x: Math.min(dragStart.current.x, dragEndX),
+      y: Math.min(dragStart.current.y, dragEndY),
+      w: Math.abs(dragEndX - dragStart.current.x),
+      h: Math.abs(dragEndY - dragStart.current.y),
     });
+
+    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
   };
+
   const startStream = async () => {
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({
@@ -78,6 +97,7 @@ export function WebCaptureAdvisor() {
       console.error('화면 공유 취소 또는 에러:', err);
     }
   };
+
   const endStream = () => {
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
@@ -87,28 +107,19 @@ export function WebCaptureAdvisor() {
     }
   };
 
-  const runOCR = async (imageSource: HTMLCanvasElement) => {
-    const {
-      data: { text },
-    } = await Tesseract.recognize(imageSource, 'eng', {
-      logger: (m) => console.log(m.status, Math.round(m.progress * 100) + '%'),
-    });
-    console.log('인식된 텍스트:\n', text);
-  };
-
   return (
     <div className="space-y-4">
       <div className="bg-bg-surface border-border-default relative flex aspect-video items-center justify-center overflow-hidden rounded-xl border">
         <div className="absolute size-full">
-          <video ref={videoRef} className="absolute inset-0" />
+          <video ref={videoRef} className="absolute inset-0 object-fill" />
           <canvas
             ref={canvasRef}
-            className="absolute inset-0 cursor-crosshair"
+            className="absolute inset-0 size-full cursor-crosshair"
             onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
             onMouseUp={onMouseUp}
           />
         </div>
-
         {!isStreaming && (
           <div className="flex flex-col items-center gap-3 py-16">
             <div className="bg-bg-raised rounded-full p-5">
@@ -118,8 +129,8 @@ export function WebCaptureAdvisor() {
           </div>
         )}
         {isStreaming && (
-          <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-red-500/20 px-3 py-1 text-xs font-semibold text-red-400 backdrop-blur-sm">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />
+          <div className="text-smr absolute top-3 left-3 flex items-center gap-1.5 font-semibold text-red-600">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-600" />
             LIVE
           </div>
         )}
